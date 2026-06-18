@@ -2,6 +2,6 @@ POST http://localhost:3000/process-video
 Content-Type: application/json
 
 {
-  "inputFilePath": "/home/vinicius/Downloads/example-epic-of-gilgamesh.mp4",
-  "outputFilePath": "/home/vinicius/Downloads/360p-example-epic-of-gilgamesh.mp4"
+  "inputFilePath": "./videos/example-epic-of-gilgamesh.mp4",
+  "outputFilePath": "./videos/processed-video.mp4"
 }
