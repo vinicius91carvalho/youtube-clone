@@ -3,10 +3,19 @@ import fs from 'fs';
 import ffmpeg from 'fluent-ffmpeg';
 
 
-const storage = new Storage();
+const storageOptions = process.env.GCS_API_ENDPOINT
+  ? {
+      projectId: 'test-project',
+      apiEndpoint: process.env.GCS_API_ENDPOINT,
+    }
+  : {
+      projectId: 'test-project',
+    };
 
-const rawVideoBucketName = "neetcode-yt-raw-videos";
-const processedVideoBucketName = "neetcode-yt-processed-videos";
+const storage = new Storage(storageOptions);
+
+const rawVideoBucketName = "neetcode-youtube-course-raw-videos";
+const processedVideoBucketName = "neetcode-youtube-course-processed-videos";
 
 const localRawVideoPath = "./raw-videos";
 const localProcessedVideoPath = "./processed-videos";
@@ -77,8 +86,12 @@ export async function uploadProcessedVideo(fileName: string) {
         `${localProcessedVideoPath}/${fileName} uploaded to gs://${processedVideoBucketName}/${fileName}.`
     );
 
-    // Set the video to be publicly readable
-    await bucket.file(fileName).makePublic();
+    // Set the video to be publicly readable. The local fake-gcs emulator's
+    // filesystem backend doesn't implement object ACLs/generations, so skip it
+    // when pointing at the emulator (this only matters against real GCS).
+    if (!process.env.GCS_API_ENDPOINT) {
+        await bucket.file(fileName).makePublic();
+    }
 }
 
 

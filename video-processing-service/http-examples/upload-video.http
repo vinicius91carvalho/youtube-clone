@@ -2,6 +2,14 @@ POST http://localhost:3000/process-video
 Content-Type: application/json
 
 {
-  "inputFilePath": "./videos/example-epic-of-gilgamesh.mp4",
-  "outputFilePath": "./videos/processed-video.mp4"
+  "message": {
+    "data": "eyJuYW1lIjoiZXhhbXBsZS1lcGljLW9mLWdpbGdhbWVzaC5tcDQifQ=="
+  }
 }
+
+# The `data` field is base64 of the Pub/Sub payload below. `name` must be the
+# OBJECT NAME inside the raw-videos bucket (not a host path) — the service
+# downloads gs://neetcode-youtube-course-raw-videos/<name>, transcodes to 360p,
+# and uploads the result to the processed-videos bucket.
+#
+# '{"name":"example-epic-of-gilgamesh.mp4"}'

@@ -23,3 +23,12 @@ A project from neetcode.io course
 * Google Cloud Storage
 * Google Cloud Pub/Sub
 * Google Cloud Run
+
+# Run
+
+docker compose up
+
+## Test locally
+
+Use the follow request [upload-video.http](video-processing-service/http-examples/upload-video.http) to test it.
+I'm using [httpYac VS Code plugin](https://marketplace.visualstudio.com/items?itemName=anweber.vscode-httpyac) to call it.

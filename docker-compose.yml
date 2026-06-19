@@ -1,0 +1,34 @@
+services:
+  fake-gcs:
+    image: fsouza/fake-gcs-server
+    ports:
+      - "4443:4443"
+    # fake-gcs auto-creates a bucket from every subdirectory of /data on startup
+    # and preloads the files inside them as objects. So the buckets are defined
+    # simply by the folder layout under ./data/gcs-data:
+    #   neetcode-youtube-course-raw-videos/        (seeded with the sample video)
+    #   neetcode-youtube-course-processed-videos/  (empty — filled at runtime)
+    # No init container or bucket-creation script needed.
+    volumes:
+      - ./data/gcs-data:/data
+    # -filesystem-root /data makes the mounted host dir the live storage root so
+    # objects uploaded at runtime (the processed videos) persist back to the host
+    # under ./data/gcs-data/. Without it, fake-gcs only seeds from /data and writes
+    # new objects to its internal /storage dir, which isn't mounted.
+    command: -scheme http -port 4443 -external-url http://localhost:4443 -filesystem-root /data
+
+  video-processor:
+    build: ./video-processing-service
+    depends_on:
+      - fake-gcs
+    environment:
+      # NOT STORAGE_EMULATOR_HOST: @google-cloud/storage reads that variable
+      # directly and uses it as the base URL without the /storage/v1 path,
+      # which makes every request 404 against fake-gcs. Pass the endpoint via a
+      # custom variable that storage.ts forwards as the `apiEndpoint` option.
+      GCS_API_ENDPOINT: http://fake-gcs:4443
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data/video-processing-service/raw-videos:/app/raw-videos
+      - ./data/video-processing-service/processed-videos:/app/processed-videos
