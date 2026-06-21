@@ -28,7 +28,7 @@ services:
       # custom variable that storage.ts forwards as the `apiEndpoint` option.
       GCS_API_ENDPOINT: http://fake-gcs:4443
     ports:
-      - "3000:3000"
+      - "5001:3000"
     volumes:
       - ./data/video-processing-service/raw-videos:/app/raw-videos
       - ./data/video-processing-service/processed-videos:/app/processed-videos
@@ -36,9 +36,17 @@ services:
   video-web-client-dev:
     image: node:24
     ports:
-      - "8080:3000"
+      - "5000:3000"
     volumes:
       - ./video-web-client:/app
     working_dir: /app
     command: sh -c "npm install && npm run dev"
-      
+  
+  firebase-emulator:
+    image: andreysenov/firebase-tools:15.21.0
+    ports:
+      - "4000:4000" # for Firebase emulators UI
+      - "4001:9099" # for Auth emulator
+    volumes:
+      - ./video-web-client:/home/node
+    command: sh -c "firebase emulators:start --only auth"
