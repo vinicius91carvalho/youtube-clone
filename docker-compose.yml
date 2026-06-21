@@ -32,3 +32,13 @@ services:
     volumes:
       - ./data/video-processing-service/raw-videos:/app/raw-videos
       - ./data/video-processing-service/processed-videos:/app/processed-videos
+    
+  video-web-client-dev:
+    image: node:24
+    ports:
+      - "8080:3000"
+    volumes:
+      - ./video-web-client:/app
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+      
