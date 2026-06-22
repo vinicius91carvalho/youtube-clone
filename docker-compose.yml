@@ -39,6 +39,15 @@ services:
       - "5000:3000"
     volumes:
       - ./video-web-client:/app
+      # Keep node_modules and the Next.js/Turbopack build cache INSIDE the container,
+      # shadowing the host copies. The bind mount above shares the source code, but
+      # .next and node_modules must NOT be shared with the host: this container runs as
+      # root and bakes its own absolute paths (/app/...) into the Turbopack cache, which
+      # then collides with host `next dev` runs (different uid + /home/... paths),
+      # producing "Permission denied" and broken-path Turbopack panics. Named volumes
+      # give the container its own writable, isolated copies.
+      - web-node-modules:/app/node_modules
+      - web-next-cache:/app/.next
     working_dir: /app
     command: sh -c "npm install && npm run dev"
   
@@ -46,7 +55,13 @@ services:
     image: andreysenov/firebase-tools:15.21.0
     ports:
       - "4000:4000" # for Firebase emulators UI
-      - "4001:9099" # for Auth emulator
+      - "9099:9099" # for Auth emulator
     volumes:
       - ./video-web-client:/home/node
     command: sh -c "firebase emulators:start --only auth"
+
+# Named volumes that isolate the web client's node_modules and Next.js build cache
+# from the host filesystem (see the video-web-client-dev service above).
+volumes:
+  web-node-modules:
+  web-next-cache:
