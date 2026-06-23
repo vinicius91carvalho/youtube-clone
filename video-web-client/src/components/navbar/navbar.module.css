@@ -1,21 +1,21 @@
 .nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
 }
 
 .logoContainer {
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-    color: #000;
-    font-size: 1.5rem;
-    font-family: 'Roboto', sans-serif;
-    font-weight: bold;
-    text-align: center;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #000;
+  font-size: 1.5rem;
+  font-family: "Roboto", sans-serif;
+  font-weight: bold;
+  text-align: center;
 }
 
 .logoName {
-    margin-left: 0.5rem;
+  margin-left: 0.5rem;
 }
