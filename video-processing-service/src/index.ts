@@ -1,5 +1,5 @@
 import express from "express";
-
+import { isVideoNew, setVideo } from "./firestore.ts";
 import {
   convertVideo,
   deleteProcessedVideo,
@@ -7,7 +7,7 @@ import {
   downloadRawVideo,
   setupDirectories,
   uploadProcessedVideo,
-} from "./storage";
+} from "./storage.ts";
 
 // Create the local directories for videos
 setupDirectories();
@@ -36,6 +36,18 @@ app.post("/process-video", async (req, res) => {
   const inputFileName = data.name;
   const outputFileName = `processed-${inputFileName}`;
 
+  const videoId = inputFileName.split(".")[0]; // Assuming the video ID is the filename with extension
+
+  if (await isVideoNew(videoId)) {
+    return res.status(400).send("Video already processed or in processing.");
+  } else {
+    await setVideo(videoId, {
+      id: videoId,
+      uid: videoId.split("-")[0], // Assuming the UID is part of the filename
+      status: "processing",
+    });
+  }
+
   // Download the raw video from Cloud Storage
   await downloadRawVideo(inputFileName);
 
@@ -43,6 +55,7 @@ app.post("/process-video", async (req, res) => {
   try {
     await convertVideo(inputFileName, outputFileName);
   } catch (err) {
+    console.log("Error during video processing:", err);
     await Promise.all([
       deleteRawVideo(inputFileName),
       deleteProcessedVideo(outputFileName),
@@ -52,6 +65,11 @@ app.post("/process-video", async (req, res) => {
 
   // Upload the processed video to Cloud Storage
   await uploadProcessedVideo(outputFileName);
+
+  await setVideo(videoId, {
+    filename: outputFileName,
+    status: "processed",
+  });
 
   await Promise.all([
     deleteRawVideo(inputFileName),

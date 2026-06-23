@@ -12,5 +12,17 @@
     "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2
+  },
+  "linter": {
+    "enabled": true,
+    "domains": {
+      "types": "all"
+    },
+    "rules": {
+      "recommended": false,
+      "nursery": {
+        "noFloatingPromises": "error"
+      }
+    }
   }
 }

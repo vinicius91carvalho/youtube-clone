@@ -73,7 +73,7 @@ export const generateUploadUrl = onCall(
 
     return {
       url,
-      method: "PUT",
+      method: "POST",
       fileName,
     };
   },

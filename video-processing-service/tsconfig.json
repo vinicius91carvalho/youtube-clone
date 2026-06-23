@@ -11,6 +11,10 @@
     "target": "esnext",
     "types": [],
     "esModuleInterop": true,
+    // Allow `.ts` extensions in relative import paths and rewrite them to `.js`
+    // on emit, so the editor's auto-added `.ts` imports still build to dist/.
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
