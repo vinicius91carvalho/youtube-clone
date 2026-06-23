@@ -1,3 +1,4 @@
+import cors from "cors";
 import express from "express";
 import { isVideoNew, setVideo } from "./firestore.ts";
 import {
@@ -13,6 +14,12 @@ import {
 setupDirectories();
 
 const app = express();
+// The browser (origin http://localhost:3000) POSTs to /process-video to simulate
+// the Pub/Sub push the production pipeline would deliver. That cross-origin POST
+// carries Content-Type: application/json, so the browser sends a CORS preflight
+// first; without this middleware the Express app never answers it and the request
+// is blocked. cors() also auto-handles the OPTIONS preflight.
+app.use(cors());
 app.use(express.json());
 
 // Process a video file from Cloud Storage into 360p
@@ -39,13 +46,13 @@ app.post("/process-video", async (req, res) => {
   const videoId = inputFileName.split(".")[0]; // Assuming the video ID is the filename with extension
 
   if (await isVideoNew(videoId)) {
-    return res.status(400).send("Video already processed or in processing.");
-  } else {
     await setVideo(videoId, {
       id: videoId,
       uid: videoId.split("-")[0], // Assuming the UID is part of the filename
       status: "processing",
     });
+  } else {
+    return res.status(400).send("Video already processed or in processing.");
   }
 
   // Download the raw video from Cloud Storage

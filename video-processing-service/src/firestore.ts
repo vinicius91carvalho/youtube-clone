@@ -62,6 +62,9 @@ export async function setVideo(videoId: string, video: Video): Promise<void> {
  */
 export async function isVideoNew(videoId: string): Promise<boolean> {
   const docRef = firestore.collection(videoCollectionId).doc(videoId);
-  const video: Video | null = await docRef.get();
-  return video?.status === undefined;
+  const snapshot = await docRef.get();
+  // .get() resolves to a DocumentSnapshot; the stored fields live under .data(),
+  // not on the snapshot itself. A video is "new" when it has no processing status
+  // yet (no doc, or a doc without a status).
+  return (snapshot.data() as Video | undefined)?.status === undefined;
 }

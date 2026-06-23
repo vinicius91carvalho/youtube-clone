@@ -78,3 +78,8 @@ export const generateUploadUrl = onCall(
     };
   },
 );
+
+export const getVideos = onCall({ maxInstances: 1 }, async (request) => {
+  const videosSnapshot = await firestore.collection("videos").limit(10).get();
+  return videosSnapshot.docs.map((doc) => doc.data());
+});
