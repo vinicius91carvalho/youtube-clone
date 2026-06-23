@@ -3,18 +3,11 @@ services:
     image: fsouza/fake-gcs-server
     ports:
       - "4443:4443"
-    # fake-gcs auto-creates a bucket from every subdirectory of /data on startup
-    # and preloads the files inside them as objects. So the buckets are defined
-    # simply by the folder layout under ./data/gcs-data:
-    #   neetcode-youtube-course-raw-videos/        (seeded with the sample video)
-    #   neetcode-youtube-course-processed-videos/  (empty — filled at runtime)
-    # No init container or bucket-creation script needed.
+    # fake-gcs creates a bucket from each subdirectory of /data and preloads their
+    # files, so the buckets are defined by the layout under ./data/gcs-data.
     volumes:
       - ./data/gcs-data:/data
-    # -filesystem-root /data makes the mounted host dir the live storage root so
-    # objects uploaded at runtime (the processed videos) persist back to the host
-    # under ./data/gcs-data/. Without it, fake-gcs only seeds from /data and writes
-    # new objects to its internal /storage dir, which isn't mounted.
+    # -filesystem-root persists runtime uploads back to the mounted host dir.
     command: -scheme http -port 4443 -external-url http://localhost:4443 -filesystem-root /data
 
   video-processor:
@@ -23,15 +16,10 @@ services:
       - fake-gcs
       - firebase-emulator
     environment:
-      # NOT STORAGE_EMULATOR_HOST: @google-cloud/storage reads that variable
-      # directly and uses it as the base URL without the /storage/v1 path,
-      # which makes every request 404 against fake-gcs. Pass the endpoint via a
-      # custom variable that storage.ts forwards as the `apiEndpoint` option.
+      # Custom var (not STORAGE_EMULATOR_HOST) so storage.ts can pass it as the
+      # `apiEndpoint`; the standard var drops the /storage/v1 path and 404s.
       GCS_API_ENDPOINT: http://fake-gcs:4443
-      # firestore.ts defaults this to localhost:8080, but inside this container
-      # the Firestore emulator isn't on localhost — it runs in the
-      # firebase-emulator service. Point the Admin SDK at it by service name, or
-      # every setVideo/isVideoNew call fails with ECONNREFUSED ::1:8080.
+      # Reach the Firestore emulator by service name from inside this container.
       FIRESTORE_EMULATOR_HOST: firebase-emulator:8080
     ports:
       - "3001:3000"
@@ -43,15 +31,14 @@ services:
     image: node:24
     ports:
       - "3000:3000"
+    environment:
+      # SSR runs in this container, so it reaches the Functions emulator by its
+      # service name instead of localhost (the browser still uses localhost:5001).
+      FUNCTIONS_EMULATOR_HOST: firebase-emulator
     volumes:
       - ./video-web-client:/app
-      # Keep node_modules and the Next.js/Turbopack build cache INSIDE the container,
-      # shadowing the host copies. The bind mount above shares the source code, but
-      # .next and node_modules must NOT be shared with the host: this container runs as
-      # root and bakes its own absolute paths (/app/...) into the Turbopack cache, which
-      # then collides with host `next dev` runs (different uid + /home/... paths),
-      # producing "Permission denied" and broken-path Turbopack panics. Named volumes
-      # give the container its own writable, isolated copies.
+      # Keep node_modules and the .next cache container-local; sharing them with
+      # the host causes uid/path conflicts and Turbopack cache panics.
       - web-node-modules:/app/node_modules
       - web-next-cache:/app/.next
     working_dir: /app
@@ -71,16 +58,12 @@ services:
       - ./video-web-client:/home/node
       - ./video-api-service:/home/node/api-service
     environment:
-      # The generateUploadUrl function embeds this URL in the response it returns
-      # to the BROWSER, which then uploads straight to fake-gcs. So unlike the
-      # video-processor (which reaches fake-gcs by its container name), this must
-      # be the host-reachable URL: the browser runs on the host, where fake-gcs is
-      # published on localhost:4443.
+      # generateUploadUrl returns this URL to the browser, which uploads to
+      # fake-gcs directly — so it must be the host-reachable URL, not the service name.
       GCS_API_ENDPOINT: http://localhost:4443
     command: sh -c "npm --prefix api-service/functions run build && firebase emulators:start"
 
-# Named volumes that isolate the web client's node_modules and Next.js build cache
-# from the host filesystem (see the video-web-client-dev service above).
+# Container-local volumes for the web client's node_modules and .next cache.
 volumes:
   web-node-modules:
   web-next-cache:
