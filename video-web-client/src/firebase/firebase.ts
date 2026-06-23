@@ -25,7 +25,7 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // In Docker, the Auth emulator runs in the firebase-emulator container on port
-// 9099, published to the host as 4001 (see docker-compose.yml). This SDK call runs
+// 9099 (see docker-compose.yml). This SDK call runs
 // in the browser (the Sign In/Out component is a client component), so the emulator
 // must be addressed by its host-reachable URL. Use localhost, not 0.0.0.0 — the
 // latter is a bind-all address and is not a valid connection target from a browser.

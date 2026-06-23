@@ -21,3 +21,4 @@ data/video-processing-service/processed-videos/*
 data/gcs-data/neetcode-youtube-course-processed-videos/*
 !data/**/.gitkeep
 *.bucketMetadata
+.npm

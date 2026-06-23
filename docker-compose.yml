@@ -28,7 +28,7 @@ services:
       # custom variable that storage.ts forwards as the `apiEndpoint` option.
       GCS_API_ENDPOINT: http://fake-gcs:4443
     ports:
-      - "5001:3000"
+      - "3001:3000"
     volumes:
       - ./data/video-processing-service/raw-videos:/app/raw-videos
       - ./data/video-processing-service/processed-videos:/app/processed-videos
@@ -36,7 +36,7 @@ services:
   video-web-client-dev:
     image: node:24
     ports:
-      - "5000:3000"
+      - "3000:3000"
     volumes:
       - ./video-web-client:/app
       # Keep node_modules and the Next.js/Turbopack build cache INSIDE the container,
@@ -55,10 +55,16 @@ services:
     image: andreysenov/firebase-tools:15.21.0
     ports:
       - "4000:4000" # for Firebase emulators UI
+      - "4400:4400" # for Emulator Hub API
+      - "4500:4500" # for Emulator Suite logging WebSocket (real-time log streaming to UI)
       - "9099:9099" # for Auth emulator
+      - "8080:8080" # for Cloud Firestore
+      - "5001:5001" # for Cloud Functions
+      - "9150:9150" # for Firestore UI WebSocket
     volumes:
       - ./video-web-client:/home/node
-    command: sh -c "firebase emulators:start --only auth"
+      - ./video-api-service:/home/node/api-service
+    command: sh -c "npm --prefix api-service/functions run build && firebase emulators:start"
 
 # Named volumes that isolate the web client's node_modules and Next.js build cache
 # from the host filesystem (see the video-web-client-dev service above).
