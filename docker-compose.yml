@@ -64,6 +64,13 @@ services:
     volumes:
       - ./video-web-client:/home/node
       - ./video-api-service:/home/node/api-service
+    environment:
+      # The generateUploadUrl function embeds this URL in the response it returns
+      # to the BROWSER, which then uploads straight to fake-gcs. So unlike the
+      # video-processor (which reaches fake-gcs by its container name), this must
+      # be the host-reachable URL: the browser runs on the host, where fake-gcs is
+      # published on localhost:4443.
+      GCS_API_ENDPOINT: http://localhost:4443
     command: sh -c "npm --prefix api-service/functions run build && firebase emulators:start"
 
 # Named volumes that isolate the web client's node_modules and Next.js build cache

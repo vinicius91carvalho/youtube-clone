@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { onAuthStateChangedHelper } from "@/src/firebase/firebase";
 import { SignIn } from "../sign-in-or-out/sign-in-or-out";
+import Upload from "../upload/upload";
 import styles from "./navbar.module.css";
 
 export default function Navbar() {
@@ -27,9 +28,7 @@ export default function Navbar() {
         <Image src="/logo.svg" alt="Youtube Logo" width={29} height={20} />
         <span className={styles.logoName}>Youtube</span>
       </Link>
-      {
-        // TODO: Add a upload button here
-      }
+      {user && <Upload />}
       <SignIn user={user} />
     </nav>
   );

@@ -21,7 +21,7 @@ const firebaseConfig = {
 // Guard against re-initialization: Next.js re-evaluates this module on every HMR
 // update and on both the server and the client. Calling initializeApp twice for the
 // default app throws app/duplicate-app, so reuse the existing instance if present.
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // In Docker, the Auth emulator runs in the firebase-emulator container on port
