@@ -19,3 +19,18 @@
 .uploadButton:hover {
   background-color: rgb(230, 230, 230);
 }
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgb(200, 200, 200);
+  border-top-color: black;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
