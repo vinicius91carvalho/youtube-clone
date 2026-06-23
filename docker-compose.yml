@@ -21,12 +21,18 @@ services:
     build: ./video-processing-service
     depends_on:
       - fake-gcs
+      - firebase-emulator
     environment:
       # NOT STORAGE_EMULATOR_HOST: @google-cloud/storage reads that variable
       # directly and uses it as the base URL without the /storage/v1 path,
       # which makes every request 404 against fake-gcs. Pass the endpoint via a
       # custom variable that storage.ts forwards as the `apiEndpoint` option.
       GCS_API_ENDPOINT: http://fake-gcs:4443
+      # firestore.ts defaults this to localhost:8080, but inside this container
+      # the Firestore emulator isn't on localhost — it runs in the
+      # firebase-emulator service. Point the Admin SDK at it by service name, or
+      # every setVideo/isVideoNew call fails with ECONNREFUSED ::1:8080.
+      FIRESTORE_EMULATOR_HOST: firebase-emulator:8080
     ports:
       - "3001:3000"
     volumes:

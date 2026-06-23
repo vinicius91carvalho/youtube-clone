@@ -37,6 +37,23 @@ export async function uploadVideo(file: File): Promise<string> {
     throw new Error(
       `Upload failed with status ${uploadResponse.status}: ${await uploadResponse.text()}`,
     );
+  } else {
+    // Simulate the Pub/Sub message that the server would normally send to the video-processing-service.
+    await fetch("http://localhost:3001/process-video", {
+      method: "POST",
+      body: JSON.stringify({
+        message: {
+          data: btoa(
+            JSON.stringify({
+              name: response.data.fileName,
+            }),
+          ),
+        },
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
   }
 
   return response.data.fileName;

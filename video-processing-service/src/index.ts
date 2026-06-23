@@ -1,5 +1,6 @@
+import cors from "cors";
 import express from "express";
-
+import { isVideoNew, setVideo } from "./firestore.ts";
 import {
   convertVideo,
   deleteProcessedVideo,
@@ -7,12 +8,18 @@ import {
   downloadRawVideo,
   setupDirectories,
   uploadProcessedVideo,
-} from "./storage";
+} from "./storage.ts";
 
 // Create the local directories for videos
 setupDirectories();
 
 const app = express();
+// The browser (origin http://localhost:3000) POSTs to /process-video to simulate
+// the Pub/Sub push the production pipeline would deliver. That cross-origin POST
+// carries Content-Type: application/json, so the browser sends a CORS preflight
+// first; without this middleware the Express app never answers it and the request
+// is blocked. cors() also auto-handles the OPTIONS preflight.
+app.use(cors());
 app.use(express.json());
 
 // Process a video file from Cloud Storage into 360p
@@ -36,6 +43,18 @@ app.post("/process-video", async (req, res) => {
   const inputFileName = data.name;
   const outputFileName = `processed-${inputFileName}`;
 
+  const videoId = inputFileName.split(".")[0]; // Assuming the video ID is the filename with extension
+
+  if (await isVideoNew(videoId)) {
+    await setVideo(videoId, {
+      id: videoId,
+      uid: videoId.split("-")[0], // Assuming the UID is part of the filename
+      status: "processing",
+    });
+  } else {
+    return res.status(400).send("Video already processed or in processing.");
+  }
+
   // Download the raw video from Cloud Storage
   await downloadRawVideo(inputFileName);
 
@@ -43,6 +62,7 @@ app.post("/process-video", async (req, res) => {
   try {
     await convertVideo(inputFileName, outputFileName);
   } catch (err) {
+    console.log("Error during video processing:", err);
     await Promise.all([
       deleteRawVideo(inputFileName),
       deleteProcessedVideo(outputFileName),
@@ -52,6 +72,11 @@ app.post("/process-video", async (req, res) => {
 
   // Upload the processed video to Cloud Storage
   await uploadProcessedVideo(outputFileName);
+
+  await setVideo(videoId, {
+    filename: outputFileName,
+    status: "processed",
+  });
 
   await Promise.all([
     deleteRawVideo(inputFileName),
