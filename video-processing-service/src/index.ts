@@ -1,13 +1,13 @@
-import express from 'express';
+import express from "express";
 
 import {
-  uploadProcessedVideo,
-  downloadRawVideo,
-  deleteRawVideo,
-  deleteProcessedVideo,
   convertVideo,
-  setupDirectories
-} from './storage';
+  deleteProcessedVideo,
+  deleteRawVideo,
+  downloadRawVideo,
+  setupDirectories,
+  uploadProcessedVideo,
+} from "./storage";
 
 // Create the local directories for videos
 setupDirectories();
@@ -16,19 +16,21 @@ const app = express();
 app.use(express.json());
 
 // Process a video file from Cloud Storage into 360p
-app.post('/process-video', async (req, res) => {
-
+app.post("/process-video", async (req, res) => {
   // Get the bucket and filename from the Cloud Pub/Sub message
+  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
   let data;
   try {
-    const message = Buffer.from(req.body.message.data, 'base64').toString('utf8');
+    const message = Buffer.from(req.body.message.data, "base64").toString(
+      "utf8",
+    );
     data = JSON.parse(message);
     if (!data.name) {
-      throw new Error('Invalid message payload received.');
+      throw new Error("Invalid message payload received.");
     }
   } catch (error) {
     console.error(error);
-    return res.status(400).send('Bad Request: missing filename.');
+    return res.status(400).send("Bad Request: missing filename.");
   }
 
   const inputFileName = data.name;
@@ -39,13 +41,13 @@ app.post('/process-video', async (req, res) => {
 
   // Process the video into 360p
   try {
-    await convertVideo(inputFileName, outputFileName)
+    await convertVideo(inputFileName, outputFileName);
   } catch (err) {
     await Promise.all([
       deleteRawVideo(inputFileName),
-      deleteProcessedVideo(outputFileName)
+      deleteProcessedVideo(outputFileName),
     ]);
-    return res.status(500).send('Processing failed');
+    return res.status(500).send("Processing failed");
   }
 
   // Upload the processed video to Cloud Storage
@@ -53,10 +55,10 @@ app.post('/process-video', async (req, res) => {
 
   await Promise.all([
     deleteRawVideo(inputFileName),
-    deleteProcessedVideo(outputFileName)
+    deleteProcessedVideo(outputFileName),
   ]);
 
-  return res.status(200).send('Processing finished successfully');
+  return res.status(200).send("Processing finished successfully");
 });
 
 const port = process.env.PORT || 3000;
