@@ -14,19 +14,15 @@ import {
 setupDirectories();
 
 const app = express();
-// The browser (origin http://localhost:3000) POSTs to /process-video to simulate
-// the Pub/Sub push the production pipeline would deliver. That cross-origin POST
-// carries Content-Type: application/json, so the browser sends a CORS preflight
-// first; without this middleware the Express app never answers it and the request
-// is blocked. cors() also auto-handles the OPTIONS preflight.
+// The browser POSTs here cross-origin to simulate the Pub/Sub push; CORS lets
+// that request (and its preflight) through.
 app.use(cors());
 app.use(express.json());
 
 // Process a video file from Cloud Storage into 360p
 app.post("/process-video", async (req, res) => {
-  // Get the bucket and filename from the Cloud Pub/Sub message
-  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-  let data;
+  // Decode the filename from the Pub/Sub message.
+  let data: { name?: string };
   try {
     const message = Buffer.from(req.body.message.data, "base64").toString(
       "utf8",
@@ -43,12 +39,12 @@ app.post("/process-video", async (req, res) => {
   const inputFileName = data.name;
   const outputFileName = `processed-${inputFileName}`;
 
-  const videoId = inputFileName.split(".")[0]; // Assuming the video ID is the filename with extension
+  const videoId = inputFileName.split(".")[0];
 
   if (await isVideoNew(videoId)) {
     await setVideo(videoId, {
       id: videoId,
-      uid: videoId.split("-")[0], // Assuming the UID is part of the filename
+      uid: videoId.split("-")[0],
       status: "processing",
     });
   } else {
