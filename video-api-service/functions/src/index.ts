@@ -12,10 +12,7 @@ const storage = new Storage();
 
 const rawVideoBucketName = "neetcode-youtube-course-raw-videos";
 
-// When set (offline/Docker mode), this is the browser-reachable base URL of the
-// fake-gcs storage emulator. The browser — not this function — uploads to it, so
-// it must be the host URL (http://localhost:4443), not the container name. See
-// docker-compose.yml.
+// Offline/Docker mode: browser-reachable base URL of the fake-gcs emulator.
 const gcsApiEndpoint = process.env.GCS_API_ENDPOINT;
 
 export const createUser = functions.auth.user().onCreate((user) => {
@@ -33,7 +30,6 @@ export const createUser = functions.auth.user().onCreate((user) => {
 export const generateUploadUrl = onCall(
   { maxInstances: 1 },
   async (request) => {
-    // Check if the user is authenticated
     if (!request.auth) {
       throw new functions.https.HttpsError(
         "failed-precondition",
@@ -46,11 +42,8 @@ export const generateUploadUrl = onCall(
 
     const fileName = `${auth.uid}-${Date.now()}.${data.fileExtension}`;
 
-    // Offline mode: fake-gcs doesn't verify signatures and only accepts uploads
-    // on the JSON-API simple-upload endpoint via POST. Generating a signed PUT
-    // URL would require signing credentials the emulator doesn't have (and
-    // fake-gcs wouldn't honour the path-style signed URL anyway), so hand the
-    // browser the upload endpoint directly.
+    // Offline mode: fake-gcs accepts uploads only on its POST simple-upload
+    // endpoint and can't sign URLs, so hand the browser that endpoint directly.
     if (gcsApiEndpoint) {
       return {
         url:
