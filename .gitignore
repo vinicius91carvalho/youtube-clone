@@ -9,10 +9,8 @@ coverage
 *.log
 *.tsbuildinfo
 *.swp
-# Ignore video files by default...
+# Ignore video files; the fake-gcs bucket dirs are kept via .gitkeep markers.
 *.mp4
-# ...but keep the seed video that defines the initial fake-gcs bucket structure
-!data/gcs-data/neetcode-youtube-course-raw-videos/example-epic-of-gilgamesh.mp4
 
 # Local runtime state written by fake-gcs / the processor at run time,
 # while keeping the committed directory structure (via the .gitkeep markers).
