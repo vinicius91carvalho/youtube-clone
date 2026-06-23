@@ -5,32 +5,48 @@ import {
 } from "firebase/functions";
 import { app } from "./firebase";
 
-// Reuse the default app initialized in firebase.ts; getFunctions() on its own
-// would throw if this module were imported before the app was created.
 const functions = getFunctions(app);
 
-// In Docker, the Functions emulator runs in the firebase-emulator container on
-// port 5001 (see docker-compose.yml). This call runs in the browser, so the
-// emulator must be addressed by its host-reachable URL. Use localhost, not
-// 0.0.0.0 — without this the SDK calls the (non-existent) production Cloud
-// Functions endpoint and every upload fails with "internal"/"Failed to fetch".
-connectFunctionsEmulator(functions, "localhost", 5001);
+// Reach the Functions emulator from the right host: the browser uses localhost,
+// while SSR runs inside the container and must use the compose service name.
+const functionsEmulatorHost =
+  typeof window === "undefined"
+    ? (process.env.FUNCTIONS_EMULATOR_HOST ?? "firebase-emulator")
+    : "localhost";
+connectFunctionsEmulator(functions, functionsEmulatorHost, 5001);
 
-const generateUploadUrl = httpsCallable(functions, "generateUploadUrl");
+const generateUploadUrlFunction = httpsCallable(functions, "generateUploadUrl");
+const getVideosFunction = httpsCallable(functions, "getVideos");
+
+export interface Video {
+  id?: string;
+  uid?: string;
+  filename?: string;
+  status?: "processing" | "processed" | "failed";
+  title?: string;
+  description?: string;
+}
+
+interface UploadUrlResponse {
+  url: string;
+  method: string;
+  fileName: string;
+}
 
 export async function uploadVideo(file: File): Promise<string> {
-  const response: any = await generateUploadUrl({
+  const response = await generateUploadUrlFunction({
     fileExtension: file.name.split(".").pop(),
   });
+  const data = response.data as UploadUrlResponse;
 
-  // The server decides the upload URL and HTTP method: a signed PUT against real
-  // GCS, or a POST to the fake-gcs emulator's upload endpoint when running offline.
-  const uploadResponse = await fetch(response.data.url, {
-    method: response.data.method,
+  // The server returns the upload URL and HTTP method (real GCS or fake-gcs).
+  const uploadResponse = await fetch(data.url, {
+    method: data.method,
     body: file,
     headers: {
       "Content-Type": file.type,
     },
+    cache: "no-cache",
   });
 
   if (!uploadResponse.ok) {
@@ -38,14 +54,14 @@ export async function uploadVideo(file: File): Promise<string> {
       `Upload failed with status ${uploadResponse.status}: ${await uploadResponse.text()}`,
     );
   } else {
-    // Simulate the Pub/Sub message that the server would normally send to the video-processing-service.
+    // Simulate the Pub/Sub message the server would send to the processing service.
     await fetch("http://localhost:3001/process-video", {
       method: "POST",
       body: JSON.stringify({
         message: {
           data: btoa(
             JSON.stringify({
-              name: response.data.fileName,
+              name: data.fileName,
             }),
           ),
         },
@@ -56,5 +72,10 @@ export async function uploadVideo(file: File): Promise<string> {
     });
   }
 
-  return response.data.fileName;
+  return data.fileName;
+}
+
+export async function getVideos(): Promise<Video[]> {
+  const response = await getVideosFunction();
+  return response.data as Video[];
 }

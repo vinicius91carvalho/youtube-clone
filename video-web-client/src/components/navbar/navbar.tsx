@@ -10,17 +10,12 @@ import Upload from "../upload/upload";
 import styles from "./navbar.module.css";
 
 export default function Navbar() {
-  // Init user state
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChangedHelper((user) => {
-      setUser(user);
-    });
-
-    // Clean up subscription to auth state events
+    const unsubscribe = onAuthStateChangedHelper(setUser);
     return () => unsubscribe();
-  });
+  }, []);
 
   return (
     <nav className={styles.nav}>

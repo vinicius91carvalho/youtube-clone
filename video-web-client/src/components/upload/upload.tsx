@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 "use client";
 
 import { Fragment } from "react";
@@ -10,7 +9,7 @@ export default function Upload() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.item(0);
     if (file) {
-      handleUpload(file);
+      void handleUpload(file);
     }
   };
 
@@ -18,7 +17,7 @@ export default function Upload() {
     try {
       const response = await uploadVideo(file);
       alert(
-        `File uploaded successfully. Server responded with: ${JSON.stringify(response)}`,
+        `Uploaded as ${response}. It will appear once processing finishes.`,
       );
     } catch (error) {
       alert(`Failed to upload file: ${error}`);
@@ -43,6 +42,7 @@ export default function Upload() {
           stroke="currentColor"
           className="w-6 h-6"
         >
+          <title>Upload</title>
           <path
             strokeLinecap="round"
             d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"
