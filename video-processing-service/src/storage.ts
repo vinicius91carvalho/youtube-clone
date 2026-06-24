@@ -2,16 +2,12 @@ import { Storage } from "@google-cloud/storage";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 
-const storageOptions = process.env.GCS_API_ENDPOINT
-  ? {
-      projectId: "test-project",
-      apiEndpoint: process.env.GCS_API_ENDPOINT,
-    }
-  : {
-      projectId: "test-project",
-    };
-
-const storage = new Storage(storageOptions);
+const storage = new Storage({
+  projectId: "test-project",
+  ...(process.env.GCS_API_ENDPOINT && {
+    apiEndpoint: process.env.GCS_API_ENDPOINT,
+  }),
+});
 
 const rawVideoBucketName = "neetcode-youtube-course-raw-videos";
 const processedVideoBucketName = "neetcode-youtube-course-processed-videos";
@@ -23,8 +19,8 @@ const localProcessedVideoPath = "./processed-videos";
  * Creates the local directories for raw and processed videos.
  */
 export function setupDirectories() {
-  ensureDirectoryExistence(localRawVideoPath);
-  ensureDirectoryExistence(localProcessedVideoPath);
+  fs.mkdirSync(localRawVideoPath, { recursive: true });
+  fs.mkdirSync(localProcessedVideoPath, { recursive: true });
 }
 
 /**
@@ -115,31 +111,6 @@ export function deleteProcessedVideo(fileName: string) {
  * @returns A promise that resolves when the file has been deleted.
  */
 function deleteFile(filePath: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (fs.existsSync(filePath)) {
-      fs.unlink(filePath, (err) => {
-        if (err) {
-          console.error(`Failed to delete file at ${filePath}`, err);
-          reject(err);
-        } else {
-          console.log(`File deleted at ${filePath}`);
-          resolve();
-        }
-      });
-    } else {
-      console.log(`File not found at ${filePath}, skipping delete.`);
-      resolve();
-    }
-  });
-}
-
-/**
- * Ensures a directory exists, creating it if necessary.
- * @param {string} dirPath - The directory path to check.
- */
-function ensureDirectoryExistence(dirPath: string) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true }); // recursive: true enables creating nested directories
-    console.log(`Directory created at ${dirPath}`);
-  }
+  // force: true ignores a missing file.
+  return fs.promises.rm(filePath, { force: true });
 }

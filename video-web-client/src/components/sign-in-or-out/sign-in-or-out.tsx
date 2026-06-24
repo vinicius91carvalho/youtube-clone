@@ -1,7 +1,6 @@
 "use client";
 
 import type { User } from "firebase/auth";
-import { Fragment } from "react";
 import { signInWithGoogle, signOut } from "@/src/firebase/firebase";
 import styles from "./sign-in-or-out.module.css";
 
@@ -10,25 +9,17 @@ interface SignInProps {
 }
 
 export function SignIn({ user }: SignInProps) {
-  return (
-    <Fragment>
-      {user ? (
-        <button
-          type="button"
-          className={styles["signin-or-out"]}
-          onClick={signOut}
-        >
-          Sign out
-        </button>
-      ) : (
-        <button
-          type="button"
-          className={styles["signin-or-out"]}
-          onClick={signInWithGoogle}
-        >
-          Sign In
-        </button>
-      )}
-    </Fragment>
+  return user ? (
+    <button type="button" className={styles["signin-or-out"]} onClick={signOut}>
+      Sign out
+    </button>
+  ) : (
+    <button
+      type="button"
+      className={styles["signin-or-out"]}
+      onClick={signInWithGoogle}
+    >
+      Sign In
+    </button>
   );
 }

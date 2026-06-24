@@ -7,7 +7,7 @@ process.env.FIRESTORE_EMULATOR_HOST ??= "localhost:8080";
 
 // Reuse the existing app to avoid re-initialization on reload.
 const existingApp = getApps()[0];
-export const app =
+const app =
   existingApp ?? initializeApp({ projectId: "demo-neetcode-firebase" });
 
 const firestore = getFirestore(app);
@@ -21,16 +21,6 @@ export interface Video {
   status?: "processing" | "processed" | "failed";
   title?: string;
   description?: string;
-}
-
-// Fetches a video document by ID, or null if it doesn't exist.
-export async function getVideo(videoId: string): Promise<Video | null> {
-  const docRef = firestore.collection(videoCollectionId).doc(videoId);
-  const docSnapshot = await docRef.get();
-  if (!docSnapshot.exists) {
-    return null;
-  }
-  return { id: docSnapshot.id, ...docSnapshot.data() } as Video;
 }
 
 // Creates or merges a video document.
