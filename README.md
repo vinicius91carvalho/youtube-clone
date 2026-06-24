@@ -2,20 +2,17 @@
 
 A YouTube-style video platform built while following the [neetcode.io](https://neetcode.io) full-stack course.
 
-> **What's different from the course:** the original course deploys to real Google Cloud
-> (Cloud Storage, Cloud Run, Pub/Sub) and real Firebase. **This version runs 100% offline
-> with Docker** — no Google Cloud account, no billing, no internet required. Cloud Storage is
-> replaced by [`fake-gcs-server`](https://github.com/fsouza/fake-gcs-server) and Firebase
-> Auth/Firestore/Functions run inside the official **Firebase Emulator Suite**. Everything
-> starts with a single `docker compose up`.
+> **What's different from the course:** the original deploys to real Google Cloud and
+> Firebase. **This version runs 100% offline with Docker** — no cloud account, no billing,
+> no internet required (see [replacements](#offline-replacements-for-google-cloud) below).
+> Everything starts with a single `docker compose up`.
 
 ## Features
 
 * List videos
-* Watch a video
+* Watch a transcoded (360p) video
 * Sign in / out (Google auth, via emulator)
 * Upload a video
-* Watch the transcoded (360p) video
 
 ## Tech Stack
 
@@ -32,7 +29,7 @@ A YouTube-style video platform built while following the [neetcode.io](https://n
 
 | Course (cloud) | This project (local) |
 | --- | --- |
-| Google Cloud Storage | `fake-gcs-server` container |
+| Google Cloud Storage | [`fake-gcs-server`](https://github.com/fsouza/fake-gcs-server) container |
 | Firebase Auth / Firestore / Functions | Firebase Emulator Suite container |
 | Cloud Run / Pub/Sub trigger | `POST /process-video` called manually (see [Testing](#testing-the-video-processing)) |
 
@@ -63,15 +60,6 @@ Two GCS buckets are auto-created by `fake-gcs` from the folder layout under
 
 * `neetcode-youtube-course-raw-videos` — uploads land here (seeded with a sample video)
 * `neetcode-youtube-course-processed-videos` — transcoded output is written here
-
-## Services
-
-| Directory | What it is | Port(s) |
-| --- | --- | --- |
-| `video-web-client` | Next.js front-end | `3000` |
-| `video-processing-service` | Express + FFmpeg transcoder | `3001` → `3000` in container |
-| `video-api-service` | Firebase Functions (`createUser`, `generateUploadUrl`) | runs in emulator `5001` |
-| `data/gcs-data` | fake-gcs storage root (buckets persist here) | — |
 
 ## Prerequisites
 
@@ -118,36 +106,21 @@ data/
 In production this endpoint is triggered by a Cloud Pub/Sub message when a file
 lands in the raw bucket. Offline, you trigger it manually.
 
-Send the example request in
-[`video-processing-service/http-examples/upload-video.http`](video-processing-service/http-examples/upload-video.http).
-It posts a base64 Pub/Sub-style payload naming an object in the raw bucket; the
+Post a base64 Pub/Sub-style payload naming an object in the raw bucket; the
 service downloads `gs://neetcode-youtube-course-raw-videos/<name>`, transcodes it
 to 360p, and uploads the result to the processed bucket.
-
-```http
-POST http://localhost:3001/process-video
-Content-Type: application/json
-
-{
-  "message": {
-    "data": "eyJuYW1lIjoiZXhhbXBsZS1lcGljLW9mLWdpbGdhbWVzaC5tcDQifQ=="
-  }
-}
-```
-
-> `data` is base64 of `{"name":"example-epic-of-gilgamesh.mp4"}` — the repo ships
-> with `example-epic-of-gilgamesh.mp4` already seeded in the raw bucket, so this
-> request works out of the box.
-
-The recommended way to fire it is the
-[httpYac VS Code plugin](https://marketplace.visualstudio.com/items?itemName=anweber.vscode-httpyac),
-but any HTTP client (curl, Postman, etc.) works:
 
 ```bash
 curl -X POST http://localhost:3001/process-video \
   -H "Content-Type: application/json" \
   -d '{"message":{"data":"eyJuYW1lIjoiZXhhbXBsZS1lcGljLW9mLWdpbGdhbWVzaC5tcDQifQ=="}}'
 ```
+
+> `data` is base64 of `{"name":"example-epic-of-gilgamesh.mp4"}` — the repo ships
+> with that file already seeded in the raw bucket, so this works out of the box.
+> Prefer a GUI client? The same request lives in
+> [`video-processing-service/http-examples/upload-video.http`](video-processing-service/http-examples/upload-video.http)
+> (e.g. the [httpYac](https://marketplace.visualstudio.com/items?itemName=anweber.vscode-httpyac) VS Code plugin).
 
 After it completes, the transcoded file appears in
 `data/gcs-data/neetcode-youtube-course-processed-videos/`.
